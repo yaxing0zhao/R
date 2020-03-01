@@ -1,0 +1,404 @@
+---
+title: "R for Data Science Notes"
+author: "Yaxing"
+date: "2020-02-27"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      comment = "#",
+                      results = "hide",
+                      message = F,
+                      warning = F,
+                      cache = F, 
+                      eval = F)
+```
+
+R for Data Science ebook: <http://r4ds.had.co.nz>
+
+
+
+## Prerequisites
+```{r}
+library(nycflights13)
+library(tidyverse)
+```
+
+### Base functions maybe helpful.
+```{r}
+apropos()
+dir()
+seq(1, 10, length.out = 5)
+
+near(1 / 49 * 49, 1)  ## return T/F
+
+y &! x
+y | x
+xor(x, y)
+```
+
+# Module 1 
+## 5. Data Transformation
+### 1. filter()   
+### 2. arrange()
+### 3. select()
+### 4. mutate()
+### 5. summarise()
+### 6. cumulative, rank, position, count
+
+```{r}
+### filter
+filter(flights, dep_time == "517")
+
+## logical operators
+y &! x  
+y | x
+xor(x, y)
+
+### order by coloum
+arrange(flights, dep_time)
+arrange(flights, desc(dep_time))
+
+### select value/columns == $ or []
+select(flights, dep_time)
+
+## helper functions within select()
+starts_with("abc")
+ends_with("xyz")
+contains("ijk")
+matches("(.)\\1")
+num_range("x", 1:3)
+everything()
+
+rename(flights, tail_num = tailnum)
+
+### create new vaeiables == cbind()
+mutate(flights, new_col)
+## keep new variables
+transmute(flights, new_col) # return new col
+
+## offset
+lead(vec)
+lag(vec)
+
+## cumulative and roll aggregates. cf. accumulate()
+cumsum()
+cumprod()
+cummin()
+cummax()
+cummean()
+
+## rank
+min_rank() #　desc()
+row_number()
+dense_rank()
+percent_rank()
+cume_dist()
+ntile()
+
+### summarise == simply list (group_by())
+summarise()
+## equals to tapply  
+by_day <- group_by(flights, year, month, day)
+summarise(by_day, delay = mean(dep_delay, na.rm = TRUE))
+
+## measures of position:
+first(x) # == x[1]
+nth(x, 2) # == x[2]
+last(x) #== x[length(x)]
+
+##counts:
+n()
+sum(!is.na(x)) # non-missing value
+n_distinct(x) # unique value
+count()
+mean( y == 0) # return proportion
+
+# ungrouping
+ungroup()
+
+```
+
+# module 2
+## 10. Tibbles
+### 1. numbers
+### 2. string
+```{r}
+as_tibble(df)
+
+read_csv() # skip = n, comment = "#", col_names = F
+write_csv()
+
+# parsing_*()
+problem()
+
+## numbers ####
+# Used in America
+parse_number("$123,456,789")
+#> [1] 1.23e+08
+
+# Used in many parts of Europe
+parse_number("123.456.789", locale = locale(grouping_mark = "."))
+#> [1] 1.23e+08
+
+# Used in Switzerland
+parse_number("123'456'789", locale = locale(grouping_mark = "'"))
+#> [1] 1.23e+08
+
+
+## strings ####
+charToRaw("Hadley")
+#> [1] 48 61 64 6c 65 79
+parse_character(x1, locale = locale(encoding = "Latin1"))
+#> [1] "El Ni??o was particularly bad this year"
+parse_character(x2, locale = locale(encoding = "Shift-JIS"))
+#> [1] "こんにちは"
+guess_encoding(charToRaw(x1))
+
+```
+
+## Tidy Data
+```{r}
+## pivoting == melt, reshape
+pivot_longer()
+pivot_wider()
+
+## separatind a col into 2 cols
+table3 %>% 
+  separate(rate, into = c("cases", "population"), sep = "/", convert = T)
+# optional function with separate()
+sep = "/"
+convert = T
+sep = 2
+
+## unite 2 cols into 1 col
+table5 %>% 
+  unite(new, century, year, sep = "")
+
+## missing value
+complete()
+fill()
+```
+
+## Relational Data
+```{r}
+### similar to SQL
+
+## dplyr == merge
+inner_join(x, y) # merge(x, y)
+left_join(x, y) # merge(x, y, all.x = T)
+right_join(x, y) # merge(x, y, all.y = T)
+full_join(x, y) # merge(x, y, all.x = T, all.y = T)
+
+# filter join
+semi_join(x, y)
+anti_join(x, y)
+
+## set 
+intersect(x, y)
+union(x, y)
+setdiff(x, y)
+```
+
+## String
+
+```{r}
+writeLines(x) ## return raw contents
+str_length(x) # length
+str_c(x) # combining == paste, collapse = "": within vector
+str_sub(x, start_position, str_length)
+str_to_upper()
+str_to_lower()
+str_to_title()
+
+str_sort()
+# locale = ""
+str_view() ## find where target is, == match
+str_view_all()
+# ^a: to match the start of the string
+# a$: to match the end of the string
+# \d: matches any digit.
+# \s: matches any whitespace (e.g. space, tab, newline).
+# [abc]: matches a, b, or c.
+# [^abc]: matches anything except a, b, or c.
+# ?: 0 or 1
+# +: 1 or more
+# *: 0 or more
+# {n}: exactly n
+# {n,}: n or more
+# {,m}: at most m
+# {n,m}: between n and m
+str_detect(x, "e") # return T/F
+identical(x, y) # return T/F
+
+str_count(x, "e") # similar to str_detect, return number
+
+str_extract() # extract match
+str_extract_all(x, "e", simplify = T) # 
+str_match() # group match
+str_replace() # replace match
+str_split(simplify = T)
+
+boundary( "word") # split up by character, line, sentence and word
+str_locate()
+regex(x, fixed() | coll())
+
+```
+
+## Factor
+```{r}
+# modifying factor order
+fct_reorder(f,a)
+fct_relevel()
+fct_infreq() # to order levels in increasing frequency�� combine with fct_rev()
+
+# modifying factor level
+fct_recode()
+fct_collapse()
+fct_lump()
+```
+
+# Module 3: Programming
+
+## Pipe
+```{r}
+delays <- flights %>% 
+  group_by(dest) %>% 
+  summarise(
+    count = n(),
+    dist = mean(distance, na.rm = TRUE),
+    delay = mean(arr_delay, na.rm = TRUE)
+  ) %>% 
+  filter(count > 20, dest != "HNL")
+
+assign("x", 10)
+tryCatch()
+
+%$% #  you pass them individual vectors, not a data frame and expressions to be evaluated in the context of that data frame
+%<>%
+```
+
+## Functions, if ...
+### switch()
+```{r}
+## switch: multiple condiction == many if
+ccc <- c("b","QQ","a","A","bb")
+# note: cat() produces no output for NULL
+for(ch in ccc)
+  cat(ch,":", switch(EXPR = ch, a = 1, b = 2:3), "\n")
+for(ch in ccc)
+  cat(ch,":", switch(EXPR = ch, a =, A = 1, b = 2:3, "Otherwise: last"),"\n")
+
+# seq_along(x) # == 1:length(x)
+out <- vector("list", length(means))
+for (i in seq_along(means)) {
+  n <- sample(100, 1)
+  out[[i]] <- rnorm(n, means[[i]])
+}
+str(out)
+
+### vector 
+typeof(1:10)
+attr()
+```
+
+## Iteration
+### For loop variation   
+### 1. map() family
+### 2. walk() family
+### 3. apply() family
+```{r}
+## for loop variations
+col_summary <- function(df, fun) {
+  out <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    out[i] <- fun(df[[i]])
+  }
+  out
+}
+col_summary(df, median)
+
+## map for only one argument:
+map() # makes a list.
+map_lgl() # makes a logical vector.
+map_int() # makes an integer vector.
+map_dbl() # makes a double vector.
+map_chr() # makes a character vector.
+
+map_dbl(df, median) # df %>% map_dbl(median)
+
+models %>% 
+  map(summary) %>% 
+  map_dbl("r.squared")
+
+apply() # apply family
+vapply(df, is.numeric, logical(1)) # == map_lgl(df, is.numeric)
+
+## map for multiple arguments:
+map2()
+pmap()
+
+map2(vec_para1, vec_para2, fun, other_defult_para) # similar to apply
+pmap(df, fun) # df[,1:3] are vec_paras.
+
+## invoking different functions
+invoke_map(fun, paras, defult_para)
+
+# walk: Walk is an alternative to map that you use when you want to call a function for its side effects, rather than for its return value.
+walk()
+walk2()
+pwalk()
+
+pwalk(list(paths, plots), ggsave, path = tempdir())
+
+```
+
+
+
+### Dealing with failure
+```{r}
+safely() ## return result, error
+purrr::transpose() ## return two lists: one of all the errors and one of all the output
+possibly() #give it a default value to return when there is an error
+quietly() # it captures printed output, messages, and warnings
+```
+
+
+### Predicate function
+```{r}
+keep()
+discard()
+some()
+every()
+
+detect() # finds the first element where the predicate is true; 
+detect_index() # returns its position.
+
+head_while() 
+tail_while() #　take elements from the start or end of a vector while a predicate is true:
+```
+
+
+### Reduce and accumulate
+```{r}
+# reduce()
+vs <- list(
+  c(1, 3, 5, 6, 10),
+  c(1, 2, 3, 7, 8, 10),
+  c(1, 2, 3, 4, 8, 9, 10)
+)
+vs %>% reduce(intersect)
+
+# accumulate()
+x <- sample(10)
+x
+#>  [1]  7  5 10  9  8  3  1  4  2  6
+x %>% accumulate(`+`)
+#>  [1]  7 12 22 31 39 42 43 47 49 55
+
+```
+
+
+
